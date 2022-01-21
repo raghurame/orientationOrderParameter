@@ -17,6 +17,12 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+typedef struct orderParameter
+{
+	int atom1, atom2, atom3, atom4;
+	float distance, theta_rad, theta_deg, orderParameter;
+} ORDERPARAMETER;
+
 typedef struct dumpinfo
 {
 	int timestep, nAtoms;
@@ -430,83 +436,48 @@ DUMPFILE_INFO getDumpFileInfo (FILE *inputDumpFile)
 	return dumpfile;
 }
 
-void printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors)
+ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors, int currentTimestep, unsigned int nElements)
 {
-	// To the existing bond info, add atom1Type and atom2Type.
-	// Then check if these bonds correspond to the vector mentioned in config file
-	// If they are same as those mentioned in config file, then calculate order parameter
+	FILE *allData;
+	char *allData_string;
+	allData_string = (char *) malloc (50 * sizeof (char));
+	sprintf (allData_string, "logs/allData_%d.oop", currentTimestep);
+	allData = fopen (allData_string, "w");
+
+	ORDERPARAMETER *allData_array;
+	allData_array = (ORDERPARAMETER *) malloc (nElements * sizeof (ORDERPARAMETER));
+
+	unsigned int currentElement = 0;
 
 	float x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4, distance, dotProduct, magnitude1, magnitude2, cosTheta, theta, orderParameter;
 
-	// Assuming that the bin size equals '1' angstorms
-	int nBins_x = (int) (dumpfile.xhi - dumpfile.xlo) + 1, nBins_y = (int) (dumpfile.yhi - dumpfile.ylo) + 1, nBins_z = (int) (dumpfile.zhi - dumpfile.zlo) + 1;
-
 	for (int i = 0; i < datafile.nBonds; ++i)
 	{
-
 		bonds[i].atom1Type = dumpAtoms[bonds[i].atom1 - 1].atomType;
 		bonds[i].atom2Type = dumpAtoms[bonds[i].atom2 - 1].atomType;
 
 		// Checking if the bonds correspond to inputVectors[0]; from the first line of the config file
 		if ((bonds[i].atom1Type == inputVectors[0].atom1 && bonds[i].atom2Type == inputVectors[0].atom2) || (bonds[i].atom1Type == inputVectors[0].atom2 && bonds[i].atom2Type == inputVectors[0].atom1))
 		{
-			/*
-			for loop to check every other bonds,
-			if the other bond inside the second 'for' loop corresponds to inputVectors atoms,
-			then calculate orientation order parameter.
-			print atom1, atom2, atom3, atom4, distance and order parameter in a file (and store the same in a pointer array)
-			this list can then be used to process further.
-			later on, only the order parameters within a distance can be considered. 
-			order parameter can also be plotted as a function of distance.
-			*/
-
 			for (int j = (i + 1); j < datafile.nBonds; ++j)
 			{
+				bonds[j].atom1Type = dumpAtoms[bonds[j].atom1 - 1].atomType;
+				bonds[j].atom2Type = dumpAtoms[bonds[j].atom2 - 1].atomType;
+
 				if ((bonds[j].atom1Type == inputVectors[1].atom1 && bonds[j].atom2Type == inputVectors[1].atom2) || (bonds[j].atom1Type == inputVectors[1].atom2 && bonds[j].atom2Type == inputVectors[1].atom1))
 				{
 					// Finding the center of two bonds (x1, y1, z1) and (x2, y2, z2)
-					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2;
-					x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2;
-					y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2;
-					y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2;
-					z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2;
-					z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
+					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2; x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2; y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2; y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2; z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2; z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
 
 					// Distance between the centers of two bonds
-					distance = sqrt (((x2 - x1) * (x2 - x1))
-						+ ((y2 - y1) * (y2 - y1))
-						+ ((z2 - z1) * (z2  - z1)));
+					distance = sqrt (((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2  - z1)));
 
 					// Storing the positions of all 4 atoms forming the two bonds of interest
-					x1 = dumpAtoms[bonds[i].atom1 - 1].x; y1 = dumpAtoms[bonds[i].atom1 - 1].y; z2 = dumpAtoms[bonds[i].atom1 - 1].z;
-					x2 = dumpAtoms[bonds[i].atom2 - 1].x; y2 = dumpAtoms[bonds[i].atom2 - 1].y; z2 = dumpAtoms[bonds[i].atom2 - 1].z;
-					x3 = dumpAtoms[bonds[j].atom1 - 1].x; y3 = dumpAtoms[bonds[j].atom1 - 1].y; z3 = dumpAtoms[bonds[j].atom1 - 1].z;
-					x4 = dumpAtoms[bonds[j].atom2 - 1].x; y4 = dumpAtoms[bonds[j].atom2 - 1].y; z4 = dumpAtoms[bonds[j].atom2 - 1].z;
+					x1 = dumpAtoms[bonds[i].atom1 - 1].x; y1 = dumpAtoms[bonds[i].atom1 - 1].y; z2 = dumpAtoms[bonds[i].atom1 - 1].z; x2 = dumpAtoms[bonds[i].atom2 - 1].x; y2 = dumpAtoms[bonds[i].atom2 - 1].y; z2 = dumpAtoms[bonds[i].atom2 - 1].z; x3 = dumpAtoms[bonds[j].atom1 - 1].x; y3 = dumpAtoms[bonds[j].atom1 - 1].y; z3 = dumpAtoms[bonds[j].atom1 - 1].z; x4 = dumpAtoms[bonds[j].atom2 - 1].x; y4 = dumpAtoms[bonds[j].atom2 - 1].y; z4 = dumpAtoms[bonds[j].atom2 - 1].z; dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3)); magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1)); magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3)); cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); theta = acosf (cosTheta); orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
 
-					dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3));
-					magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1));
-					magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3));
+					fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
 
-					cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2));
-					theta = acosf (cosTheta);
-					orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
-
-					printf("a1: %d; a2: %d; a3: %d; a4: %d; dist: %f; radians: %f; degrees: %f; OOP: %f\n", 
-						bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
-					sleep (1);
-
-					/* To calculate:
-					 * ~~~~~~~~~~~~
-					 *
-					 * [~] Average and standard deviation of distribution of OOP as a function of distance
-					 *
-					 */
-
-					// Calculate average from already stored dumpAtoms[] and bonds[]
-
-					// Calculate OOP again, then compute SD using the previously calculated average, using the already stored dumpAtoms[] and bonds[]
-
-					// printf("%d %d %d %d\n", bonds[i].atom1Type, bonds[i].atom2Type, bonds[j].atom1Type, bonds[j].atom2Type);
+					allData_array[currentElement].atom1 = bonds[i].atom1; allData_array[currentElement].atom2 = bonds[i].atom2; allData_array[currentElement].atom3 = bonds[j].atom1; allData_array[currentElement].atom4 = bonds[j].atom2; allData_array[currentElement].distance = distance; allData_array[currentElement].theta_rad = theta; allData_array[currentElement].theta_deg = theta * 57.2958; allData_array[currentElement].orderParameter = orderParameter; currentElement++;
 				}
 			}
 		}
@@ -516,13 +487,72 @@ void printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfile, DATAFIL
 		{
 			for (int j = (i + 1); j < datafile.nBonds; ++j)
 			{
+				bonds[j].atom1Type = dumpAtoms[bonds[j].atom1 - 1].atomType;
+				bonds[j].atom2Type = dumpAtoms[bonds[j].atom2 - 1].atomType;
+
 				if ((bonds[j].atom1Type == inputVectors[0].atom1 && bonds[j].atom2Type == inputVectors[0].atom2) || (bonds[j].atom1Type == inputVectors[0].atom2 && bonds[j].atom2Type == inputVectors[0].atom1))
 				{
-					printf("%d %d %d %d\n", bonds[i].atom1Type, bonds[i].atom2Type, bonds[j].atom1Type, bonds[j].atom2Type);
+					// Finding the center of two bonds (x1, y1, z1) and (x2, y2, z2)
+					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2; x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2; y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2; y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2; z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2; z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
+
+					// Distance between the centers of two bonds
+					distance = sqrt (((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2  - z1)));
+
+					// Storing the positions of all 4 atoms forming the two bonds of interest
+					x1 = dumpAtoms[bonds[i].atom1 - 1].x; y1 = dumpAtoms[bonds[i].atom1 - 1].y; z2 = dumpAtoms[bonds[i].atom1 - 1].z; x2 = dumpAtoms[bonds[i].atom2 - 1].x; y2 = dumpAtoms[bonds[i].atom2 - 1].y; z2 = dumpAtoms[bonds[i].atom2 - 1].z; x3 = dumpAtoms[bonds[j].atom1 - 1].x; y3 = dumpAtoms[bonds[j].atom1 - 1].y; z3 = dumpAtoms[bonds[j].atom1 - 1].z; x4 = dumpAtoms[bonds[j].atom2 - 1].x; y4 = dumpAtoms[bonds[j].atom2 - 1].y; z4 = dumpAtoms[bonds[j].atom2 - 1].z; dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3)); magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1)); magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3)); cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); theta = acosf (cosTheta); orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
+
+					fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
+
+					allData_array[currentElement].atom1 = bonds[i].atom1; allData_array[currentElement].atom2 = bonds[i].atom2; allData_array[currentElement].atom3 = bonds[j].atom1; allData_array[currentElement].atom4 = bonds[j].atom2; allData_array[currentElement].distance = distance; allData_array[currentElement].theta_rad = theta; allData_array[currentElement].theta_deg = theta * 57.2958; allData_array[currentElement].orderParameter = orderParameter; currentElement++;
 				}				
 			}
 		}
 	}
+
+	fclose (allData);
+	// free (allData_array);
+	return allData_array;
+}
+
+unsigned int getNElements (DATAFILE_INFO datafile, DATA_ATOMS *dumpAtoms, DATA_BONDS *bonds, CONFIG *inputVectors)
+{
+	unsigned int nElements = 0;
+
+	for (int i = 0; i < datafile.nBonds; ++i)
+	{
+		bonds[i].atom1Type = (int) dumpAtoms[bonds[i].atom1 - 1].atomType;
+		bonds[i].atom2Type = (int) dumpAtoms[bonds[i].atom2 - 1].atomType;
+
+		if ((bonds[i].atom1Type == inputVectors[0].atom1 && bonds[i].atom2Type == inputVectors[0].atom2) || (bonds[i].atom1Type == inputVectors[0].atom2 && bonds[i].atom2Type == inputVectors[0].atom1))
+		{
+			for (int j = (i + 1); j < datafile.nBonds; ++j)
+			{
+				bonds[j].atom1Type = dumpAtoms[bonds[j].atom1 - 1].atomType;
+				bonds[j].atom2Type = dumpAtoms[bonds[j].atom2 - 1].atomType;
+
+				if ((bonds[j].atom1Type == inputVectors[1].atom1 && bonds[j].atom2Type == inputVectors[1].atom2) || (bonds[j].atom1Type == inputVectors[1].atom2 && bonds[j].atom2Type == inputVectors[1].atom1))
+				{
+					nElements++;
+				}
+			}
+		}
+		else if ((bonds[i].atom1Type == inputVectors[1].atom1 && bonds[i].atom2Type == inputVectors[1].atom2) || (bonds[i].atom1Type == inputVectors[1].atom2 && bonds[i].atom2Type == inputVectors[1].atom1))
+		{
+			for (int j = (i + 1); j < datafile.nBonds; ++j)
+			{
+				bonds[j].atom1Type = dumpAtoms[bonds[j].atom1 - 1].atomType;
+				bonds[j].atom2Type = dumpAtoms[bonds[j].atom2 - 1].atomType;
+
+				if ((bonds[j].atom1Type == inputVectors[0].atom1 && bonds[j].atom2Type == inputVectors[0].atom2) || (bonds[j].atom1Type == inputVectors[0].atom2 && bonds[j].atom2Type == inputVectors[0].atom1))
+				{
+					nElements++;
+				}				
+			}
+		}
+
+	}
+
+	return nElements;
 }
 
 void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors)
@@ -531,52 +561,79 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 	dumpfile = getDumpFileInfo (inputDumpFile);
 
 	char lineString[1000];
-	int isTimestep = 0, currentTimestep, currentLine = 0, isFirstTimestep = 1;
+	int isTimestep = 0, currentTimestep, currentLine = 0, isFirstTimestep = 1, currentDumpstep = 0;
+
+	unsigned int nElements = 0;
+	int isNElementsSet = 0;
 
 	// Datafile struct is used to store dump atom information
 	DATA_ATOMS *dumpAtoms;
 	dumpAtoms = (DATA_ATOMS *) malloc (dumpfile.nAtoms * sizeof (DATA_ATOMS));
 
+	ORDERPARAMETER *allData_array;
+
+	printf("\n");
+
 	// Reading and processing dump information
 	while (fgets (lineString, 1000, inputDumpFile) != NULL)
 	{
-		// This 'if' statement is executed at the beginning of every timestep
-		if (isTimestep == 1)
+		if (currentLine == (9 + dumpfile.nAtoms) && nElements == 0)
+		{
+			nElements = getNElements (datafile, dumpAtoms, bonds, inputVectors);
+			printf("Allocating for %lu elements...\n", nElements);
+			allData_array = (ORDERPARAMETER *) malloc (nElements * sizeof (ORDERPARAMETER));
+			printf("Memory allocated successfully...\n");
+		}
+
+		if (currentDumpstep > 2 && nElements > 0)
 		{
 			sscanf (lineString, "%d", &currentTimestep);
-			isTimestep = 0;
-			currentLine = 1;
+			printf("Scanning timestep: %d...\n", currentTimestep);
+			fflush (stdout); 
 
-			// If the current timestep is not the first one,
-			// then process the dumpAtoms array from the previous timeframe.
-			if (isFirstTimestep == 0)
-			{
-				printOrderParameter (dumpAtoms, dumpfile, datafile, bonds, inputVectors);
-			}
-			isFirstTimestep = 0;
+			printf("nElements: %lu\n", nElements);
+
+			allData_array = printOrderParameter (dumpAtoms, dumpfile, datafile, bonds, inputVectors, currentTimestep, nElements);
+			
+			// for (int i = 0; i < nElements; ++i)
+			// {
+			// 	printf("%f %f\n", allData_array[i].distance, allData_array[i].orderParameter);
+			// 	fflush (stdout);
+			// 	// sleep (1);
+			// }
+
+			isTimestep = 0;
 		}
 
 		if (strstr (lineString, "ITEM: TIMESTEP"))
-			isTimestep = 1;
-
-		if (currentLine >= 9 && currentLine < (9 + dumpfile.nAtoms))
 		{
-			sscanf (lineString, "%d %d %f %f %f\n",
-				&dumpAtoms[currentLine - 9].id,
-				&dumpAtoms[currentLine - 9].atomType,
-				&dumpAtoms[currentLine - 9].x,
-				&dumpAtoms[currentLine - 9].y,
-				&dumpAtoms[currentLine - 9].z);
+			isTimestep = 1;
+			currentDumpstep++;
+			currentLine = 1;
+			isNElementsSet = 0;
 		}
+
+		if (currentLine > 9 && currentLine < (9 + dumpfile.nAtoms))
+		{	
+			sscanf (lineString, "%d %d %f %f %f\n",
+				&dumpAtoms[currentLine - 10].id,
+				&dumpAtoms[currentLine - 10].atomType,
+				&dumpAtoms[currentLine - 10].x,
+				&dumpAtoms[currentLine - 10].y,
+				&dumpAtoms[currentLine - 10].z);
+		}
+
+		// if (currentLine == (9 + dumpfile.nAtoms))
+		// 	isTimestep = 1;
 
 		currentLine++;
 	}
-
-
 }
 
 int main(int argc, char const *argv[])
 {
+	system ("mkdir logs");
+
 	FILE *inputDumpFile, *inputDataFile, *inputConfigFile;
 	char *inputDumpFilename, *inputDataFilename, *inputConfigFilename;
 
@@ -586,9 +643,6 @@ int main(int argc, char const *argv[])
 	inputDataFilename = getInputFileName ();
 	printf("%s\n", "Looking for input config file...");
 	inputConfigFilename = getInputFileName ();
-	// printf("'%s'\n", inputDumpFilename);
-	// printf("'%s'\n", inputDataFilename);
-	// printf("'%s'\n", inputConfigFilename);
 
 	inputDumpFile = fopen (inputDumpFilename, "r");
 	inputDataFile = fopen (inputDataFilename, "r");
@@ -603,8 +657,23 @@ int main(int argc, char const *argv[])
 	DATAFILE_INFO datafile;
 	datafile = readData (inputDataFile, &atoms, &bonds, &angles, &dihedrals, &impropers);
 
+	DUMPFILE_INFO dumpfile;
+	dumpfile = getDumpFileInfo (inputDumpFile);
+
 	CONFIG *inputVectors;
 	inputVectors = readConfig (inputConfigFile);
+
+	// float maxDist, hyp1, xDist = (dumpfile.xhi - dumpfile.xlo), yDist = (dumpfile.yhi - dumpfile.ylo), zDist = (dumpfile.zhi - dumpfile.zlo);
+	// hyp1 = sqrt ((xDist * xDist) + (zDist * zDist));
+	// maxDist = sqrt ((hyp1 * hyp1) + (yDist * yDist));
+
+	// float binSize_dist = 1, binSize_OOP = 0.01, binSize_deg = 1;
+	// int nBins_dist = (((int) maxDist) / (int) binSize_dist) + 1, nBins_OOP = (int) ((1 + 0.5) / binSize_OOP) + 1, nBins_deg = (180 / (int) binSize_deg) + 1;
+
+	// // [degrees][distance] and [oop][distance]
+	// int *distribution_degrees, *distribution_OOP, size_degrees = nBins_dist * nBins_deg, size_oop = nBins_dist * nBins_OOP;
+	// distribution_OOP = (int *) calloc (size_oop, sizeof (int));
+	// distribution_degrees = (int *) calloc (size_degrees, sizeof (int));
 
 	computeOrderParameter (inputDumpFile, datafile, bonds, inputVectors);
 
