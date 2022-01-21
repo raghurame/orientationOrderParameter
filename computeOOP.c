@@ -17,6 +17,16 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+typedef struct distVar
+{
+	float maxDist, binSize_OOP, binSize_deg, binSize_dist;
+	float binStart_dist, binEnd_dist, binStart_OOP, binEnd_OOP, binStart_deg, binEnd_deg;
+	int nBins_dist, nBins_OOP, nBins_deg, size_degrees, size_oop;
+
+	// Optional element to add, for easy access
+	int nElements;
+} DIST_VAR;
+
 typedef struct orderParameter
 {
 	int atom1, atom2, atom3, atom4;
@@ -555,10 +565,75 @@ unsigned int getNElements (DATAFILE_INFO datafile, DATA_ATOMS *dumpAtoms, DATA_B
 	return nElements;
 }
 
+int *computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars)
+{
+	int *distribution_OOP;
+	distribution_OOP = (int *) malloc (plotVars.size_oop * sizeof (int));
+
+	DIST_VAR currentBounds;
+	currentBounds.binStart_OOP = plotVars.binStart_OOP;
+	currentBounds.binStart_dist = plotVars.binStart_dist;
+
+	// Cycle through the order parameter bins first,
+	// then vary the distance, repeat the distribution calculations
+	for (int i = 0; i < plotVars.nBins_OOP; ++i)
+	{
+		currentBounds.binEnd_OOP = currentBounds.binStart_OOP + plotVars.binSize_OOP;
+
+		for (int j = 0; j < plotVars.nBins_dist; ++j)
+		{
+			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
+
+			/* code */
+
+			currentBounds.binStart_dist = currentBounds.binEnd_dist;
+		}
+
+		currentBounds.binStart_OOP = currentBounds.binEnd_OOP;
+	}
+
+	return distribution_OOP;
+}
+
+int *computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars)
+{
+	int *distribution_degrees;
+	distribution_degrees = (int *) malloc (plotVars.size_degrees * sizeof (int));
+
+	return distribution_degrees;
+}
+
 void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors)
 {
 	DUMPFILE_INFO dumpfile;
 	dumpfile = getDumpFileInfo (inputDumpFile);
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// Variables for plotting the distribution
+	DIST_VAR plotVars;
+
+	// Calculating the maximum distance between the two farthest points in the simulation box
+	float hyp1, xDist = (dumpfile.xhi - dumpfile.xlo), yDist = (dumpfile.yhi - dumpfile.ylo), zDist = (dumpfile.zhi - dumpfile.zlo);
+	hyp1 = sqrt ((xDist * xDist) + (zDist * zDist));
+	plotVars.maxDist = sqrt ((hyp1 * hyp1) + (yDist * yDist));
+
+	// Setting the number of bins across distance, degree, and OOP; based on the set bin size. These bin sizes can be adjusted for a smoother distribution curve
+	plotVars.binSize_dist = 1; plotVars.binSize_OOP = 0.01; plotVars.binSize_deg = 1;
+	plotVars.nBins_dist = (((int) plotVars.maxDist) / (int) plotVars.binSize_dist) + 1; plotVars.nBins_OOP = (int) ((1 + 0.5) / plotVars.binSize_OOP) + 1; plotVars.nBins_deg = (180 / (int) plotVars.binSize_deg) + 1;
+
+	// [degrees][distance] and [oop][distance]
+	int *distribution_degrees, *distribution_OOP; plotVars.size_degrees = plotVars.nBins_dist * plotVars.nBins_deg; plotVars.size_oop = plotVars.nBins_dist * plotVars.nBins_OOP;
+	distribution_OOP = (int *) calloc (plotVars.size_oop, sizeof (int));
+	distribution_degrees = (int *) calloc (plotVars.size_degrees, sizeof (int));
+
+	// Setting the bounds of bins (dist, OOP, degrees)
+	plotVars.binStart_dist = 0;
+	plotVars.binStart_OOP = -0.5;
+	plotVars.binStart_deg = 0;
+	plotVars.binEnd_dist = plotVars.maxDist;
+	plotVars.binEnd_OOP = 1.0;
+	plotVars.binEnd_deg = 180;
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	char lineString[1000];
 	int isTimestep = 0, currentTimestep, currentLine = 0, isFirstTimestep = 1, currentDumpstep = 0;
@@ -580,6 +655,7 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 		if (currentLine == (9 + dumpfile.nAtoms) && nElements == 0)
 		{
 			nElements = getNElements (datafile, dumpAtoms, bonds, inputVectors);
+			plotVars.nElements = nElements;
 			printf("Allocating for %lu elements...\n", nElements);
 			allData_array = (ORDERPARAMETER *) malloc (nElements * sizeof (ORDERPARAMETER));
 			printf("Memory allocated successfully...\n");
@@ -594,13 +670,13 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 			printf("nElements: %lu\n", nElements);
 
 			allData_array = printOrderParameter (dumpAtoms, dumpfile, datafile, bonds, inputVectors, currentTimestep, nElements);
-			
-			// for (int i = 0; i < nElements; ++i)
-			// {
-			// 	printf("%f %f\n", allData_array[i].distance, allData_array[i].orderParameter);
-			// 	fflush (stdout);
-			// 	// sleep (1);
-			// }
+			/*
+			 * Using the allData_array, compute the frequency distribution of order parameter (for various distances).
+			 * In a similar manner, calculate the frequency distribution of theta (angle between the two vectors of interest), again for various distances.
+			 */
+
+			distribution_OOP = computeDistribution_OOP (allData_array, plotVars);
+			distribution_degrees = computeDistribution_theta (allData_array, plotVars);
 
 			isTimestep = 0;
 		}
@@ -662,18 +738,6 @@ int main(int argc, char const *argv[])
 
 	CONFIG *inputVectors;
 	inputVectors = readConfig (inputConfigFile);
-
-	// float maxDist, hyp1, xDist = (dumpfile.xhi - dumpfile.xlo), yDist = (dumpfile.yhi - dumpfile.ylo), zDist = (dumpfile.zhi - dumpfile.zlo);
-	// hyp1 = sqrt ((xDist * xDist) + (zDist * zDist));
-	// maxDist = sqrt ((hyp1 * hyp1) + (yDist * yDist));
-
-	// float binSize_dist = 1, binSize_OOP = 0.01, binSize_deg = 1;
-	// int nBins_dist = (((int) maxDist) / (int) binSize_dist) + 1, nBins_OOP = (int) ((1 + 0.5) / binSize_OOP) + 1, nBins_deg = (180 / (int) binSize_deg) + 1;
-
-	// // [degrees][distance] and [oop][distance]
-	// int *distribution_degrees, *distribution_OOP, size_degrees = nBins_dist * nBins_deg, size_oop = nBins_dist * nBins_OOP;
-	// distribution_OOP = (int *) calloc (size_oop, sizeof (int));
-	// distribution_degrees = (int *) calloc (size_degrees, sizeof (int));
 
 	computeOrderParameter (inputDumpFile, datafile, bonds, inputVectors);
 
