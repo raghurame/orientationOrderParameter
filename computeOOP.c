@@ -565,14 +565,32 @@ unsigned int getNElements (DATAFILE_INFO datafile, DATA_ATOMS *dumpAtoms, DATA_B
 	return nElements;
 }
 
-int *computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars)
+typedef struct distribution
 {
-	int *distribution_OOP;
-	distribution_OOP = (int *) malloc (plotVars.size_oop * sizeof (int));
+	float binStart_OOP, binEnd_OOP, binStart_dist, binEnd_dist, binStart_deg, binEnd_deg;
+	int count;
+} DISTRIBUTION;
 
+void setDistributionZero (DISTRIBUTION **rawArray, int arraySize)
+{
+	for (int i = 0; i < arraySize; ++i)
+	{
+		(*rawArray)[i].count = 0; (*rawArray)[i].binStart_OOP = 0; (*rawArray)[i].binEnd_OOP = 0; (*rawArray)[i].binStart_dist = 0; (*rawArray)[i].binEnd_dist = 0; (*rawArray)[i].binStart_deg = 0; (*rawArray)[i].binEnd_deg = 0;
+	}
+}
+
+int getIndex1d (int i, int j, DIST_VAR plotVars)
+{
+	return (plotVars.nBins_dist * j) + i;
+}
+
+void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, DISTRIBUTION **distribution_OOP)
+{
 	DIST_VAR currentBounds;
 	currentBounds.binStart_OOP = plotVars.binStart_OOP;
 	currentBounds.binStart_dist = plotVars.binStart_dist;
+
+	int index1d;
 
 	// Cycle through the order parameter bins first,
 	// then vary the distance, repeat the distribution calculations
@@ -584,7 +602,21 @@ int *computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars)
 		{
 			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
 
-			/* code */
+			for (int k = 0; k < plotVars.nElements; ++k)
+			{
+				if (allData_array[k].orderParameter <= currentBounds.binEnd_OOP && allData_array[k].orderParameter > currentBounds.binStart_OOP && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
+				{
+					// Passing the values of 'i', 'j', and width of the array
+					index1d = getIndex1d (i, j, plotVars);
+					(*distribution_OOP)[index1d].count++;
+					(*distribution_OOP)[index1d].binStart_OOP = currentBounds.binStart_OOP;
+					(*distribution_OOP)[index1d].binEnd_OOP = currentBounds.binEnd_OOP;
+					(*distribution_OOP)[index1d].binStart_dist = currentBounds.binStart_dist;
+					(*distribution_OOP)[index1d].binEnd_dist = currentBounds.binEnd_dist;
+					(*distribution_OOP)[index1d].binStart_deg = 0;
+					(*distribution_OOP)[index1d].binEnd_deg = 0;
+				}
+			}
 
 			currentBounds.binStart_dist = currentBounds.binEnd_dist;
 		}
@@ -595,10 +627,8 @@ int *computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars)
 	return distribution_OOP;
 }
 
-int *computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars)
+void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars, DISTRIBUTION **distribution_degrees)
 {
-	int *distribution_degrees;
-	distribution_degrees = (int *) malloc (plotVars.size_degrees * sizeof (int));
 
 	return distribution_degrees;
 }
@@ -622,9 +652,13 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 	plotVars.nBins_dist = (((int) plotVars.maxDist) / (int) plotVars.binSize_dist) + 1; plotVars.nBins_OOP = (int) ((1 + 0.5) / plotVars.binSize_OOP) + 1; plotVars.nBins_deg = (180 / (int) plotVars.binSize_deg) + 1;
 
 	// [degrees][distance] and [oop][distance]
-	int *distribution_degrees, *distribution_OOP; plotVars.size_degrees = plotVars.nBins_dist * plotVars.nBins_deg; plotVars.size_oop = plotVars.nBins_dist * plotVars.nBins_OOP;
-	distribution_OOP = (int *) calloc (plotVars.size_oop, sizeof (int));
-	distribution_degrees = (int *) calloc (plotVars.size_degrees, sizeof (int));
+	plotVars.size_degrees = plotVars.nBins_dist * plotVars.nBins_deg; plotVars.size_oop = plotVars.nBins_dist * plotVars.nBins_OOP;
+	DISTRIBUTION *distribution_OOP, *distribution_degrees;
+	distribution_OOP = (DISTRIBUTION *) malloc (plotVars.size_oop * sizeof (DISTRIBUTION));
+	distribution_degrees = (DISTRIBUTION *) malloc (plotVars.size_degrees * sizeof (DISTRIBUTION));
+
+	setDistributionZero (&distribution_degrees, plotVars.size_degrees);
+	setDistributionZero (&distribution_OOP, plotVars.size_oop);
 
 	// Setting the bounds of bins (dist, OOP, degrees)
 	plotVars.binStart_dist = 0;
@@ -675,8 +709,8 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 			 * In a similar manner, calculate the frequency distribution of theta (angle between the two vectors of interest), again for various distances.
 			 */
 
-			distribution_OOP = computeDistribution_OOP (allData_array, plotVars);
-			distribution_degrees = computeDistribution_theta (allData_array, plotVars);
+			computeDistribution_OOP (allData_array, plotVars, &distribution_OOP);
+			computeDistribution_theta (allData_array, plotVars, &distribution_degrees);
 
 			isTimestep = 0;
 		}
