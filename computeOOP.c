@@ -602,6 +602,10 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 		{
 			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
 
+			// TODO
+			// Implement parallel run in this 'for' loop,
+			// because this loop is very time consuming.
+			// Just a simple dumb parallelization with 'pragma omp parallel for' will work
 			for (int k = 0; k < plotVars.nElements; ++k)
 			{
 				if (allData_array[k].orderParameter <= currentBounds.binEnd_OOP && allData_array[k].orderParameter > currentBounds.binStart_OOP && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
@@ -629,7 +633,8 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 
 void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars, DISTRIBUTION **distribution_degrees)
 {
-
+	// TODO:
+	// Copy paste the same thing from previous function
 	return distribution_degrees;
 }
 
@@ -738,6 +743,9 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 
 		currentLine++;
 	}
+
+	// TODO:
+	// At the end of complete scan, print the distribution arrays in proper format.
 }
 
 int main(int argc, char const *argv[])
