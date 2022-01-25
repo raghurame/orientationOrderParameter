@@ -592,11 +592,47 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 
 	int index1d;
 
-	// Cycle through the order parameter bins first,
-	// then vary the distance, repeat the distribution calculations
 	for (int i = 0; i < plotVars.nBins_OOP; ++i)
 	{
 		currentBounds.binEnd_OOP = currentBounds.binStart_OOP + plotVars.binSize_OOP;
+		for (int j = 0; j < plotVars.nBins_dist; ++j)
+		{
+			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
+			// TODO
+			// Implement parallel run in this 'for' loop,
+			// because this loop is very time consuming.
+			// Just a simple dumb parallelization with 'pragma omp parallel for' will work
+			for (int k = 0; k < plotVars.nElements; ++k)
+			{
+				if (allData_array[k].orderParameter <= currentBounds.binEnd_OOP && allData_array[k].orderParameter > currentBounds.binStart_OOP && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
+				{
+					index1d = getIndex1d (i, j, plotVars);
+					(*distribution_OOP)[index1d].count++;
+					(*distribution_OOP)[index1d].binStart_OOP = currentBounds.binStart_OOP;
+					(*distribution_OOP)[index1d].binEnd_OOP = currentBounds.binEnd_OOP;
+					(*distribution_OOP)[index1d].binStart_dist = currentBounds.binStart_dist;
+					(*distribution_OOP)[index1d].binEnd_dist = currentBounds.binEnd_dist;
+					(*distribution_OOP)[index1d].binStart_deg = 0;
+					(*distribution_OOP)[index1d].binEnd_deg = 0;
+				}
+			}
+			currentBounds.binStart_dist = currentBounds.binEnd_dist;
+		}
+		currentBounds.binStart_OOP = currentBounds.binEnd_OOP;
+	}
+}
+
+void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars, DISTRIBUTION **distribution_degrees)
+{
+	DIST_VAR currentBounds;
+	currentBounds.binStart_deg = plotVars.binStart_deg;
+	currentBounds.binStart_dist = plotVars.binStart_dist;
+
+	int index1d;
+
+	for (int i = 0; i < plotVars.nBins_deg; ++i)
+	{
+		currentBounds.binEnd_deg = currentBounds.binStart_deg + plotVars.binSize_deg;
 
 		for (int j = 0; j < plotVars.nBins_dist; ++j)
 		{
@@ -608,34 +644,55 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 			// Just a simple dumb parallelization with 'pragma omp parallel for' will work
 			for (int k = 0; k < plotVars.nElements; ++k)
 			{
-				if (allData_array[k].orderParameter <= currentBounds.binEnd_OOP && allData_array[k].orderParameter > currentBounds.binStart_OOP && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
+				if (allData_array[k].orderParameter <= currentBounds.binEnd_deg && allData_array[k].orderParameter > currentBounds.binStart_deg && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
 				{
-					// Passing the values of 'i', 'j', and width of the array
 					index1d = getIndex1d (i, j, plotVars);
-					(*distribution_OOP)[index1d].count++;
-					(*distribution_OOP)[index1d].binStart_OOP = currentBounds.binStart_OOP;
-					(*distribution_OOP)[index1d].binEnd_OOP = currentBounds.binEnd_OOP;
-					(*distribution_OOP)[index1d].binStart_dist = currentBounds.binStart_dist;
-					(*distribution_OOP)[index1d].binEnd_dist = currentBounds.binEnd_dist;
-					(*distribution_OOP)[index1d].binStart_deg = 0;
-					(*distribution_OOP)[index1d].binEnd_deg = 0;
+					(*distribution_degrees)[index1d].count++;
+					(*distribution_degrees)[index1d].binStart_deg = currentBounds.binStart_deg;
+					(*distribution_degrees)[index1d].binEnd_deg = currentBounds.binEnd_deg;
+					(*distribution_degrees)[index1d].binStart_dist = currentBounds.binStart_dist;
+					(*distribution_degrees)[index1d].binEnd_dist = currentBounds.binEnd_dist;
+					(*distribution_degrees)[index1d].binStart_deg = 0;
+					(*distribution_degrees)[index1d].binEnd_deg = 0;
 				}
 			}
-
 			currentBounds.binStart_dist = currentBounds.binEnd_dist;
 		}
-
-		currentBounds.binStart_OOP = currentBounds.binEnd_OOP;
+		currentBounds.binStart_deg = currentBounds.binEnd_deg;
 	}
-
-	return distribution_OOP;
 }
 
-void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars, DISTRIBUTION **distribution_degrees)
+void printDistribution_OOP (DISTRIBUTION *distribution_OOP, DIST_VAR plotVars)
 {
-	// TODO:
-	// Copy paste the same thing from previous function
-	return distribution_degrees;
+	FILE *file_distribution_OOP;
+	file_distribution_OOP = fopen ("orderParameter.dist", "w");
+
+	int index1d, oop_index, dist_index;
+
+	for (int oop_index = 0; oop_index < plotVars.nBins_OOP; ++oop_index)
+	{
+		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
+		{
+			index1d = getIndex1d (oop_index, dist_index, plotVars);
+		}
+	}
+}
+
+void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plotVars)
+{
+	FILE *file_distribution_degrees;
+	file_distribution_degrees = fopen ("degrees.dist", "w");
+	
+	int index1d, deg_index, dist_index;
+
+	for (int deg_index = 0; deg_index < plotVars.nBins_OOP; ++deg_index)
+	{
+		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
+		{
+			index1d = getIndex1d (deg_index, dist_index, plotVars);
+		}
+	}
+
 }
 
 void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors)
@@ -746,6 +803,8 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 
 	// TODO:
 	// At the end of complete scan, print the distribution arrays in proper format.
+	printDistribution_OOP (distribution_OOP, plotVars);
+	printDistribution_degrees (distribution_degrees, plotVars);
 }
 
 int main(int argc, char const *argv[])
