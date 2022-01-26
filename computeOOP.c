@@ -595,6 +595,9 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 
 	for (int i = 0; i < plotVars.nBins_OOP; ++i)
 	{
+		fprintf(stdout, "Computing OOP distribution... %d/%d\r", i, plotVars.nBins_OOP);
+		fflush (stdout);
+
 		currentBounds.binEnd_OOP = currentBounds.binStart_OOP + plotVars.binSize_OOP;
 		for (int j = 0; j < plotVars.nBins_dist; ++j)
 		{
@@ -633,6 +636,9 @@ void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars
 
 	for (int i = 0; i < plotVars.nBins_deg; ++i)
 	{
+		fprintf(stdout, "Computing theta distribution... %d/%d\r", i, plotVars.nBins_deg);
+		fflush (stdout);
+
 		currentBounds.binEnd_deg = currentBounds.binStart_deg + plotVars.binSize_deg;
 
 		for (int j = 0; j < plotVars.nBins_dist; ++j)
@@ -775,22 +781,21 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 	// Reading and processing dump information
 	while (fgets (lineString, 1000, inputDumpFile) != NULL)
 	{
+		// Executed at the end of first timeframe
 		if (currentLine == (9 + dumpfile.nAtoms) && nElements == 0)
 		{
 			nElements = getNElements (datafile, dumpAtoms, bonds, inputVectors);
 			plotVars.nElements = nElements;
-			printf("Allocating for %lu elements...\n", nElements);
+			printf("Allocating memory for %lu elements...\n", nElements);
 			allData_array = (ORDERPARAMETER *) malloc (nElements * sizeof (ORDERPARAMETER));
 			printf("Memory allocated successfully...\n");
 		}
 
-		if (currentDumpstep > 2 && nElements > 0)
+		if (currentDumpstep > 2 && nElements > 0 && currentLine == 2)
 		{
 			sscanf (lineString, "%d", &currentTimestep);
-			printf("Scanning timestep: %d...\n", currentTimestep);
+			printf("Scanning timestep: %d...               \n", currentTimestep);
 			fflush (stdout); 
-
-			printf("nElements: %lu\n", nElements);
 
 			allData_array = printOrderParameter (dumpAtoms, dumpfile, datafile, bonds, inputVectors, currentTimestep, nElements);
 			/*
