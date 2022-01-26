@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
+// #include <omp.h>
 
 typedef struct distVar
 {
@@ -664,32 +665,58 @@ void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars
 
 void printDistribution_OOP (DISTRIBUTION *distribution_OOP, DIST_VAR plotVars)
 {
-	FILE *file_distribution_OOP;
+	FILE *file_distribution_OOP, *file_distribution_OOP_info;
 	file_distribution_OOP = fopen ("orderParameter.dist", "w");
+	file_distribution_OOP_info = fopen ("orderParameter.dist.info", "w");
 
 	int index1d, oop_index, dist_index;
 
+	// Printing header information
+	fprintf(file_distribution_OOP_info, "binStart_dist: %f\nbinEnd_dist: %f\nbinStart_OOP: %f\nbinEnd_OOP: %f\nnBins_dist: %d\nnBins_OOP: %d\nsize_oop: %d\n\n",
+		plotVars.binStart_dist,
+		plotVars.binEnd_dist,
+		plotVars.binStart_OOP,
+		plotVars.binEnd_OOP,
+		plotVars.nBins_dist,
+		plotVars.nBins_OOP,
+		plotVars.size_oop);
+
 	for (int oop_index = 0; oop_index < plotVars.nBins_OOP; ++oop_index)
 	{
+		fprintf(file_distribution_OOP, "\n");
 		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
 		{
 			index1d = getIndex1d (oop_index, dist_index, plotVars);
+			fprintf(file_distribution_OOP, "%d\t", distribution_OOP[index1d].count);
 		}
 	}
 }
 
 void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plotVars)
 {
-	FILE *file_distribution_degrees;
+	FILE *file_distribution_degrees, *file_distribution_degrees_info;
 	file_distribution_degrees = fopen ("degrees.dist", "w");
+	file_distribution_degrees_info = fopen ("degrees.dist.info", "w");
+
+	// Printing header information
+	fprintf(file_distribution_degrees_info, "binStart_dist: %f\nbinEnd_dist: %f\nbinStart_deg: %f\nbinEnd_deg: %f\nnBins_dist: %d\nnBins_deg: %d\nsize_degrees: %f\n\n",
+		plotVars.binStart_dist,
+		plotVars.binEnd_dist,
+		plotVars.binStart_deg,
+		plotVars.binEnd_deg,
+		plotVars.nBins_dist,
+		plotVars.nBins_deg,
+		plotVars.size_degrees);
 	
 	int index1d, deg_index, dist_index;
 
 	for (int deg_index = 0; deg_index < plotVars.nBins_OOP; ++deg_index)
 	{
+		fprintf(file_distribution_degrees, "\n");
 		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
 		{
 			index1d = getIndex1d (deg_index, dist_index, plotVars);
+			fprintf(file_distribution_degrees, "%d\t", distribution_degrees[index1d].count);
 		}
 	}
 
