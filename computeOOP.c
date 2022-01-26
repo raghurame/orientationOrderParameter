@@ -512,11 +512,20 @@ ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfi
 
 					cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); 
 					theta = acosf (cosTheta); 
-					orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
+					orderParameter = ((3.0 * cosTheta * cosTheta) - 1.0) / 2.0;
 
 					// fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
 
-					allData_array[currentElement].atom1 = bonds[i].atom1; allData_array[currentElement].atom2 = bonds[i].atom2; allData_array[currentElement].atom3 = bonds[j].atom1; allData_array[currentElement].atom4 = bonds[j].atom2; allData_array[currentElement].distance = distance; allData_array[currentElement].theta_rad = theta; allData_array[currentElement].theta_deg = theta * 57.2958; allData_array[currentElement].orderParameter = orderParameter; currentElement++;
+					allData_array[currentElement].atom1 = bonds[i].atom1; 
+					allData_array[currentElement].atom2 = bonds[i].atom2; 
+					allData_array[currentElement].atom3 = bonds[j].atom1; 
+					allData_array[currentElement].atom4 = bonds[j].atom2; 
+					allData_array[currentElement].distance = distance; 
+					allData_array[currentElement].theta_rad = theta; 
+					allData_array[currentElement].theta_deg = theta * 57.2958; 
+					allData_array[currentElement].orderParameter = orderParameter; 
+
+					currentElement++;
 				}
 			}
 		}
@@ -564,14 +573,21 @@ ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfi
 
 					// fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
 
-					allData_array[currentElement].atom1 = bonds[i].atom1; allData_array[currentElement].atom2 = bonds[i].atom2; allData_array[currentElement].atom3 = bonds[j].atom1; allData_array[currentElement].atom4 = bonds[j].atom2; allData_array[currentElement].distance = distance; allData_array[currentElement].theta_rad = theta; allData_array[currentElement].theta_deg = theta * 57.2958; allData_array[currentElement].orderParameter = orderParameter; currentElement++;
+					allData_array[currentElement].atom1 = bonds[i].atom1; 
+					allData_array[currentElement].atom2 = bonds[i].atom2; 
+					allData_array[currentElement].atom3 = bonds[j].atom1; 
+					allData_array[currentElement].atom4 = bonds[j].atom2; 
+					allData_array[currentElement].distance = distance; 
+					allData_array[currentElement].theta_rad = theta; 
+					allData_array[currentElement].theta_deg = theta * 57.2958; 
+					allData_array[currentElement].orderParameter = orderParameter; 
+					currentElement++;
 				}				
 			}
 		}
 	}
 
 	// fclose (allData);
-	// free (allData_array);
 	return allData_array;
 }
 
@@ -794,7 +810,7 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 	plotVars.maxDist = sqrt ((hyp1 * hyp1) + (yDist * yDist));
 
 	// Setting the number of bins across distance, degree, and OOP; based on the set bin size. These bin sizes can be adjusted for a smoother distribution curve
-	plotVars.binSize_dist = 4; plotVars.binSize_OOP = 0.01; plotVars.binSize_deg = 1;
+	plotVars.binSize_dist = 4; plotVars.binSize_OOP = 0.01; plotVars.binSize_deg = 3;
 	plotVars.nBins_dist = (((int) plotVars.maxDist) / (int) plotVars.binSize_dist) + 1; plotVars.nBins_OOP = (int) ((1 + 0.5) / plotVars.binSize_OOP) + 1; plotVars.nBins_deg = (180 / (int) plotVars.binSize_deg) + 1;
 
 	// [degrees][distance] and [oop][distance]
