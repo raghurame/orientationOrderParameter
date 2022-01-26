@@ -449,11 +449,11 @@ DUMPFILE_INFO getDumpFileInfo (FILE *inputDumpFile)
 
 ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors, int currentTimestep, unsigned int nElements)
 {
-	FILE *allData;
-	char *allData_string;
-	allData_string = (char *) malloc (50 * sizeof (char));
-	sprintf (allData_string, "logs/allData_%d.oop", currentTimestep);
-	allData = fopen (allData_string, "w");
+	// FILE *allData;
+	// char *allData_string;
+	// allData_string = (char *) malloc (50 * sizeof (char));
+	// sprintf (allData_string, "logs/allData_%d.oop", currentTimestep);
+	// allData = fopen (allData_string, "w");
 
 	ORDERPARAMETER *allData_array;
 	allData_array = (ORDERPARAMETER *) malloc (nElements * sizeof (ORDERPARAMETER));
@@ -478,15 +478,43 @@ ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfi
 				if ((bonds[j].atom1Type == inputVectors[1].atom1 && bonds[j].atom2Type == inputVectors[1].atom2) || (bonds[j].atom1Type == inputVectors[1].atom2 && bonds[j].atom2Type == inputVectors[1].atom1))
 				{
 					// Finding the center of two bonds (x1, y1, z1) and (x2, y2, z2)
-					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2; x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2; y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2; y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2; z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2; z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
+					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2; 
+					y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2; 
+					z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2; 
+					x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2; 
+					y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2; 
+					z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
+
 
 					// Distance between the centers of two bonds
 					distance = sqrt (((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2  - z1)));
 
 					// Storing the positions of all 4 atoms forming the two bonds of interest
-					x1 = dumpAtoms[bonds[i].atom1 - 1].x; y1 = dumpAtoms[bonds[i].atom1 - 1].y; z2 = dumpAtoms[bonds[i].atom1 - 1].z; x2 = dumpAtoms[bonds[i].atom2 - 1].x; y2 = dumpAtoms[bonds[i].atom2 - 1].y; z2 = dumpAtoms[bonds[i].atom2 - 1].z; x3 = dumpAtoms[bonds[j].atom1 - 1].x; y3 = dumpAtoms[bonds[j].atom1 - 1].y; z3 = dumpAtoms[bonds[j].atom1 - 1].z; x4 = dumpAtoms[bonds[j].atom2 - 1].x; y4 = dumpAtoms[bonds[j].atom2 - 1].y; z4 = dumpAtoms[bonds[j].atom2 - 1].z; dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3)); magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1)); magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3)); cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); theta = acosf (cosTheta); orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
+					x1 = dumpAtoms[bonds[i].atom1 - 1].x; 
+					y1 = dumpAtoms[bonds[i].atom1 - 1].y; 
+					z1 = dumpAtoms[bonds[i].atom1 - 1].z;
 
-					fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
+					x2 = dumpAtoms[bonds[i].atom2 - 1].x; 
+					y2 = dumpAtoms[bonds[i].atom2 - 1].y; 
+					z2 = dumpAtoms[bonds[i].atom2 - 1].z; 
+
+					x3 = dumpAtoms[bonds[j].atom1 - 1].x; 
+					y3 = dumpAtoms[bonds[j].atom1 - 1].y; 
+					z3 = dumpAtoms[bonds[j].atom1 - 1].z; 
+
+					x4 = dumpAtoms[bonds[j].atom2 - 1].x; 
+					y4 = dumpAtoms[bonds[j].atom2 - 1].y; 
+					z4 = dumpAtoms[bonds[j].atom2 - 1].z; 
+
+					dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3)); 
+					magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1)); 
+					magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3)); 
+
+					cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); 
+					theta = acosf (cosTheta); 
+					orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
+
+					// fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
 
 					allData_array[currentElement].atom1 = bonds[i].atom1; allData_array[currentElement].atom2 = bonds[i].atom2; allData_array[currentElement].atom3 = bonds[j].atom1; allData_array[currentElement].atom4 = bonds[j].atom2; allData_array[currentElement].distance = distance; allData_array[currentElement].theta_rad = theta; allData_array[currentElement].theta_deg = theta * 57.2958; allData_array[currentElement].orderParameter = orderParameter; currentElement++;
 				}
@@ -504,15 +532,37 @@ ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfi
 				if ((bonds[j].atom1Type == inputVectors[0].atom1 && bonds[j].atom2Type == inputVectors[0].atom2) || (bonds[j].atom1Type == inputVectors[0].atom2 && bonds[j].atom2Type == inputVectors[0].atom1))
 				{
 					// Finding the center of two bonds (x1, y1, z1) and (x2, y2, z2)
-					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2; x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2; y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2; y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2; z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2; z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
+					x1 = (dumpAtoms[bonds[i].atom1 - 1].x + dumpAtoms[bonds[i].atom2 - 1].x) / 2; 
+					x2 = (dumpAtoms[bonds[j].atom1 - 1].x + dumpAtoms[bonds[j].atom2 - 1].x) / 2; 
+					y1 = (dumpAtoms[bonds[i].atom1 - 1].y + dumpAtoms[bonds[i].atom2 - 1].y) / 2; 
+					y2 = (dumpAtoms[bonds[j].atom1 - 1].y + dumpAtoms[bonds[j].atom2 - 1].y) / 2; 
+					z1 = (dumpAtoms[bonds[i].atom1 - 1].z + dumpAtoms[bonds[i].atom2 - 1].z) / 2; 
+					z2 = (dumpAtoms[bonds[j].atom1 - 1].z + dumpAtoms[bonds[j].atom2 - 1].z) / 2;
 
 					// Distance between the centers of two bonds
 					distance = sqrt (((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2  - z1)));
 
 					// Storing the positions of all 4 atoms forming the two bonds of interest
-					x1 = dumpAtoms[bonds[i].atom1 - 1].x; y1 = dumpAtoms[bonds[i].atom1 - 1].y; z2 = dumpAtoms[bonds[i].atom1 - 1].z; x2 = dumpAtoms[bonds[i].atom2 - 1].x; y2 = dumpAtoms[bonds[i].atom2 - 1].y; z2 = dumpAtoms[bonds[i].atom2 - 1].z; x3 = dumpAtoms[bonds[j].atom1 - 1].x; y3 = dumpAtoms[bonds[j].atom1 - 1].y; z3 = dumpAtoms[bonds[j].atom1 - 1].z; x4 = dumpAtoms[bonds[j].atom2 - 1].x; y4 = dumpAtoms[bonds[j].atom2 - 1].y; z4 = dumpAtoms[bonds[j].atom2 - 1].z; dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3)); magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1)); magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3)); cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); theta = acosf (cosTheta); orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
+					x1 = dumpAtoms[bonds[i].atom1 - 1].x; 
+					y1 = dumpAtoms[bonds[i].atom1 - 1].y; 
+					z1 = dumpAtoms[bonds[i].atom1 - 1].z; 
+					x2 = dumpAtoms[bonds[i].atom2 - 1].x; 
+					y2 = dumpAtoms[bonds[i].atom2 - 1].y; 
+					z2 = dumpAtoms[bonds[i].atom2 - 1].z; 
+					x3 = dumpAtoms[bonds[j].atom1 - 1].x; 
+					y3 = dumpAtoms[bonds[j].atom1 - 1].y; 
+					z3 = dumpAtoms[bonds[j].atom1 - 1].z; 
+					x4 = dumpAtoms[bonds[j].atom2 - 1].x; 
+					y4 = dumpAtoms[bonds[j].atom2 - 1].y; 
+					z4 = dumpAtoms[bonds[j].atom2 - 1].z; 
 
-					fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
+					dotProduct = ((x2 - x1) * (x4 - x3)) + ((y2 - y1) * (y4 - y3)) + ((z2 - z1) * (z4 - z3)); 
+					magnitude1 = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)) + ((z2 - z1) * (z2 - z1)); 
+					magnitude2 = ((x4 - x3) * (x4 - x3)) + ((y4 - y3) * (y4 - y3)) + ((z4 - z3) * (z4 - z3)); 
+					cosTheta = dotProduct / (sqrt (magnitude1) * sqrt (magnitude2)); theta = acosf (cosTheta); 
+					orderParameter = ((3 * cosTheta * cosTheta) - 1) / 2;
+
+					// fprintf(allData, "%d %d %d %d %f %f %f %f\n", bonds[i].atom1, bonds[i].atom2, bonds[j].atom1, bonds[j].atom2, distance, theta, theta * 57.2958, orderParameter);
 
 					allData_array[currentElement].atom1 = bonds[i].atom1; allData_array[currentElement].atom2 = bonds[i].atom2; allData_array[currentElement].atom3 = bonds[j].atom1; allData_array[currentElement].atom4 = bonds[j].atom2; allData_array[currentElement].distance = distance; allData_array[currentElement].theta_rad = theta; allData_array[currentElement].theta_deg = theta * 57.2958; allData_array[currentElement].orderParameter = orderParameter; currentElement++;
 				}				
@@ -520,7 +570,7 @@ ORDERPARAMETER *printOrderParameter (DATA_ATOMS *dumpAtoms, DUMPFILE_INFO dumpfi
 		}
 	}
 
-	fclose (allData);
+	// fclose (allData);
 	// free (allData_array);
 	return allData_array;
 }
