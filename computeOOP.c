@@ -16,7 +16,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
-// #include <omp.h>
+#include <omp.h>
 
 typedef struct distVar
 {
@@ -660,6 +660,9 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 	currentBounds.binStart_OOP = plotVars.binStart_OOP;
 	currentBounds.binStart_dist = plotVars.binStart_dist;
 
+	// OMP setup
+	omp_set_num_threads(3);
+
 	int index1d;
 
 	for (int i = 0; i < plotVars.nBins_OOP; ++i)
@@ -674,6 +677,7 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 		{
 			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
 
+			#pragma omp parallel for
 			for (int k = 0; k < plotVars.nElements; ++k)
 			{
 				if (allData_array[k].orderParameter <= currentBounds.binEnd_OOP && allData_array[k].orderParameter > currentBounds.binStart_OOP && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
@@ -701,6 +705,9 @@ void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars
 	currentBounds.binStart_deg = plotVars.binStart_deg;
 	currentBounds.binStart_dist = plotVars.binStart_dist;
 
+	// OMP setup
+	omp_set_num_threads(3);
+
 	int index1d;
 
 	for (int i = 0; i < plotVars.nBins_deg; ++i)
@@ -715,6 +722,7 @@ void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars
 		{
 			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
 
+			#pragma omp parallel for
 			for (int k = 0; k < plotVars.nElements; ++k)
 			{
 				if (allData_array[k].theta_deg <= currentBounds.binEnd_deg && allData_array[k].theta_deg > currentBounds.binStart_deg && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
@@ -763,6 +771,9 @@ void printDistribution_OOP (DISTRIBUTION *distribution_OOP, DIST_VAR plotVars)
 			fprintf(file_distribution_OOP, "%d\t", distribution_OOP[index1d].count);
 		}
 	}
+
+	fclose (file_distribution_OOP);
+	fclose (file_distribution_OOP_info);
 }
 
 void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plotVars)
@@ -793,6 +804,29 @@ void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plo
 		}
 	}
 
+	fclose (file_distribution_degrees);
+	fclose (file_distribution_degrees_info);
+
+	// Printing normalized data
+	FILE *file_distribution_degrees_normalized;
+	file_distribution_degrees_normalized = fopen ("degrees.dist.norm", "w");
+
+	int *maxCount;
+	maxCount = (int *) calloc (plotVars.nBins_dist, sizeof (int));
+
+	// Finding the max count in every distance bin
+	for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
+	{
+		for (int deg_index = 0; deg_index < plotVars.nBins_deg; ++deg_index)
+		{
+			index1d = getIndex1d (deg_index, dist_index, plotVars.nBins_dist);
+			if (distribution_degrees[index1d].count > maxCount[dist_index])
+				maxCount[dist_index] = distribution_degrees[index1d].count;
+		}
+		printf("%d ==> %f\n", dist_index, maxCount[dist_index]);
+	}
+
+	fclose (file_distribution_degrees_normalized);
 }
 
 void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BONDS *bonds, CONFIG *inputVectors)
