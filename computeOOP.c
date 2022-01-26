@@ -743,7 +743,7 @@ void computeOrderParameter (FILE *inputDumpFile, DATAFILE_INFO datafile, DATA_BO
 	plotVars.maxDist = sqrt ((hyp1 * hyp1) + (yDist * yDist));
 
 	// Setting the number of bins across distance, degree, and OOP; based on the set bin size. These bin sizes can be adjusted for a smoother distribution curve
-	plotVars.binSize_dist = 1; plotVars.binSize_OOP = 0.01; plotVars.binSize_deg = 1;
+	plotVars.binSize_dist = 4; plotVars.binSize_OOP = 0.01; plotVars.binSize_deg = 1;
 	plotVars.nBins_dist = (((int) plotVars.maxDist) / (int) plotVars.binSize_dist) + 1; plotVars.nBins_OOP = (int) ((1 + 0.5) / plotVars.binSize_OOP) + 1; plotVars.nBins_deg = (180 / (int) plotVars.binSize_deg) + 1;
 
 	// [degrees][distance] and [oop][distance]
