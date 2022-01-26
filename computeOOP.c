@@ -580,9 +580,12 @@ void setDistributionZero (DISTRIBUTION **rawArray, int arraySize)
 	}
 }
 
-int getIndex1d (int i, int j, DIST_VAR plotVars)
+int getIndex1d (int i, int j, int width)
 {
-	return (plotVars.nBins_dist * j) + i;
+	// width is the max value of 'j'
+	int index1d = 0;
+	index1d = (width * i) + j;
+	return index1d;
 }
 
 void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, DISTRIBUTION **distribution_OOP)
@@ -599,18 +602,18 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 		fflush (stdout);
 
 		currentBounds.binEnd_OOP = currentBounds.binStart_OOP + plotVars.binSize_OOP;
+		currentBounds.binStart_dist = plotVars.binStart_dist;
+
 		for (int j = 0; j < plotVars.nBins_dist; ++j)
 		{
 			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
-			// TODO
-			// Implement parallel run in this 'for' loop,
-			// because this loop is very time consuming.
-			// Just a simple dumb parallelization with 'pragma omp parallel for' will work
+
 			for (int k = 0; k < plotVars.nElements; ++k)
 			{
 				if (allData_array[k].orderParameter <= currentBounds.binEnd_OOP && allData_array[k].orderParameter > currentBounds.binStart_OOP && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
 				{
-					index1d = getIndex1d (i, j, plotVars);
+					index1d = getIndex1d (i, j, plotVars.nBins_dist);
+
 					(*distribution_OOP)[index1d].count++;
 					(*distribution_OOP)[index1d].binStart_OOP = currentBounds.binStart_OOP;
 					(*distribution_OOP)[index1d].binEnd_OOP = currentBounds.binEnd_OOP;
@@ -640,20 +643,17 @@ void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars
 		fflush (stdout);
 
 		currentBounds.binEnd_deg = currentBounds.binStart_deg + plotVars.binSize_deg;
+		currentBounds.binStart_dist = plotVars.binStart_dist;
 
 		for (int j = 0; j < plotVars.nBins_dist; ++j)
 		{
 			currentBounds.binEnd_dist = currentBounds.binStart_dist + plotVars.binSize_dist;
 
-			// TODO
-			// Implement parallel run in this 'for' loop,
-			// because this loop is very time consuming.
-			// Just a simple dumb parallelization with 'pragma omp parallel for' will work
 			for (int k = 0; k < plotVars.nElements; ++k)
 			{
 				if (allData_array[k].orderParameter <= currentBounds.binEnd_deg && allData_array[k].orderParameter > currentBounds.binStart_deg && allData_array[k].distance <= currentBounds.binEnd_dist && allData_array[k].distance > currentBounds.binStart_dist)
 				{
-					index1d = getIndex1d (i, j, plotVars);
+					index1d = getIndex1d (i, j, plotVars.nBins_dist);
 					(*distribution_degrees)[index1d].count++;
 					(*distribution_degrees)[index1d].binStart_deg = currentBounds.binStart_deg;
 					(*distribution_degrees)[index1d].binEnd_deg = currentBounds.binEnd_deg;
@@ -692,7 +692,7 @@ void printDistribution_OOP (DISTRIBUTION *distribution_OOP, DIST_VAR plotVars)
 		fprintf(file_distribution_OOP, "\n");
 		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
 		{
-			index1d = getIndex1d (oop_index, dist_index, plotVars);
+			index1d = getIndex1d (oop_index, dist_index, plotVars.nBins_dist);
 			fprintf(file_distribution_OOP, "%d\t", distribution_OOP[index1d].count);
 		}
 	}
@@ -721,7 +721,7 @@ void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plo
 		fprintf(file_distribution_degrees, "\n");
 		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
 		{
-			index1d = getIndex1d (deg_index, dist_index, plotVars);
+			index1d = getIndex1d (deg_index, dist_index, plotVars.nBins_dist);
 			fprintf(file_distribution_degrees, "%d\t", distribution_degrees[index1d].count);
 		}
 	}
