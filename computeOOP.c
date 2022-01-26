@@ -717,7 +717,7 @@ void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plo
 	
 	int index1d, deg_index, dist_index;
 
-	for (int deg_index = 0; deg_index < plotVars.nBins_OOP; ++deg_index)
+	for (int deg_index = 0; deg_index < plotVars.nBins_deg; ++deg_index)
 	{
 		fprintf(file_distribution_degrees, "\n");
 		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
