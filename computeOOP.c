@@ -667,7 +667,7 @@ void computeDistribution_OOP (ORDERPARAMETER *allData_array, DIST_VAR plotVars, 
 
 	for (int i = 0; i < plotVars.nBins_OOP; ++i)
 	{
-		fprintf(stdout, "Computing OOP distribution... %d/%d\r", i, plotVars.nBins_OOP);
+		fprintf(stdout, "Computing OOP distribution... %d/%d            \r", i, plotVars.nBins_OOP);
 		fflush (stdout);
 
 		currentBounds.binEnd_OOP = currentBounds.binStart_OOP + plotVars.binSize_OOP;
@@ -712,7 +712,7 @@ void computeDistribution_theta (ORDERPARAMETER *allData_array, DIST_VAR plotVars
 
 	for (int i = 0; i < plotVars.nBins_deg; ++i)
 	{
-		fprintf(stdout, "Computing theta distribution... %d/%d\r", i, plotVars.nBins_deg);
+		fprintf(stdout, "Computing theta distribution... %d/%d               \r", i, plotVars.nBins_deg);
 		fflush (stdout);
 
 		currentBounds.binEnd_deg = currentBounds.binStart_deg + plotVars.binSize_deg;
@@ -823,7 +823,24 @@ void printDistribution_degrees (DISTRIBUTION *distribution_degrees, DIST_VAR plo
 			if (distribution_degrees[index1d].count > maxCount[dist_index])
 				maxCount[dist_index] = distribution_degrees[index1d].count;
 		}
-		printf("%d ==> %f\n", dist_index, maxCount[dist_index]);
+	}
+
+	// Printing the normalized output values
+	float normalizedDistribution;
+
+	for (int deg_index = 0; deg_index < plotVars.nBins_deg; ++deg_index)
+	{
+		fprintf(file_distribution_degrees_normalized, "\n");
+		for (int dist_index = 0; dist_index < plotVars.nBins_dist; ++dist_index)
+		{
+			index1d = getIndex1d (deg_index, dist_index, plotVars.nBins_dist);
+			if (maxCount[dist_index] > 0)
+				normalizedDistribution = (float) distribution_degrees[index1d].count / (float) maxCount[dist_index];
+			else
+				normalizedDistribution = 0;
+
+			fprintf(file_distribution_degrees_normalized, "%f\t", normalizedDistribution);
+		}
 	}
 
 	fclose (file_distribution_degrees_normalized);
